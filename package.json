@@ -5,16 +5,19 @@
    "scripts": {
       "dev": "next dev",
       "build": "next build",
+      "pages:build": "npx @cloudflare/next-on-pages",
+      "deploy": "npm run pages:build && wrangler pages deploy .vercel/output/static",
       "start": "next start",
       "lint": "next lint"
    },
    "dependencies": {
+      "@phosphor-icons/react": "^2.0.15",
       "next": "latest",
       "react": "latest",
-      "react-dom": "latest",
-      "@phosphor-icons/react": "^2.0.15"
+      "react-dom": "latest"
    },
    "devDependencies": {
+      "@cloudflare/next-on-pages": "^1.13.16",
       "@types/node": "^20",
       "@types/react": "latest",
       "@types/react-dom": "latest",
