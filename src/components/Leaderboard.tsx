@@ -1,14 +1,22 @@
 'use client';
 
+import { UserInfoData } from '@/app/auth/callback/route';
 import { Donor } from '@/lib/data';
 import { useEffect, useRef, useState } from 'react';
+import './Leaderboard.css';
+import LoginButton from './LoginButton';
 
 interface LeaderboardProps {
    donors: Donor[];
    totalAmount: number;
+   user: UserInfoData | null;
 }
 
-export default function Leaderboard({ donors, totalAmount }: LeaderboardProps) {
+export default function Leaderboard({
+   donors,
+   totalAmount,
+   user,
+}: LeaderboardProps) {
    const totalDisplayRef = useRef<HTMLDivElement>(null);
    const fireworksContainerRef = useRef<HTMLDivElement>(null);
    const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null);
@@ -103,6 +111,10 @@ export default function Leaderboard({ donors, totalAmount }: LeaderboardProps) {
          <div className="royal-ornament royal-left">🏛️</div>
          <div className="royal-ornament royal-right">🏛️</div>
 
+         <div className="login-corner">
+            <LoginButton user={user} />
+         </div>
+
          <main>
             <div className="floating-emoji">💰</div>
             <div className="floating-emoji">🎊</div>
@@ -110,7 +122,6 @@ export default function Leaderboard({ donors, totalAmount }: LeaderboardProps) {
             <div className="floating-emoji">🚀</div>
             <div className="floating-emoji">🎯</div>
             <div className="floating-emoji">🏆</div>
-
             <div id="header">
                <h1>💎 Donation Ranking</h1>
                <div className="header-actions">
