@@ -20,8 +20,16 @@ export interface Donor {
    Note: string;
 }
 
-const API_URL =
-   'https://dong.mezon.ai/indexer-api/1337/transactions?page=0&limit=100&sort_by=transaction_timestamp&sort_order=desc&start_time=2025-11-24&end_time=2025-12-24&wallet_address=F6tdkXdK8nb1nMxGc2ZFBB8ZTJBM6j6rhkmUUqs2M4DE';
+const BASE_URL = 'https://dong.mezon.ai/indexer-api/1337/transactions';
+const params = new URLSearchParams({
+   page: '0',
+   limit: '100',
+   sort_by: 'transaction_timestamp',
+   sort_order: 'desc',
+   start_time: '2025-12-01',
+   wallet_address: 'F6tdkXdK8nb1nMxGc2ZFBB8ZTJBM6j6rhkmUUqs2M4DE',
+});
+const API_URL = `${BASE_URL}?${params.toString()}`;
 
 export async function getDonations(): Promise<{
    donors: Donor[];
@@ -54,7 +62,9 @@ export async function getDonations(): Promise<{
       const donors = Object.entries(groups)
          .map(([addr, data]) => ({
             Sender: addr,
-            UserName: addressMap[addr]?.username || 'Unknown',
+            UserName:
+               addressMap[addr]?.username ||
+               `${addr.slice(0, 6)}...${addr.slice(-4)}`,
             Avatar: addressMap[addr]?.avatar || '',
             Amount: new Intl.NumberFormat('vi-VN').format(data.total),
             AmountNum: data.total,

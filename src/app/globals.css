@@ -1030,13 +1030,13 @@ td:last-child {
 }
 
 /* Special effects for winner (first place) */
-tr:nth-child(2) .number {
+tbody tr:nth-child(1) .number {
    animation: rainbow 2s infinite, bounce 1.5s infinite, glow 2s infinite;
    font-size: 3.5rem;
    position: relative;
 }
 
-tr:nth-child(2) .number::before {
+tbody tr:nth-child(1) .number::before {
    content: '👑';
    position: absolute;
    top: -30px;
@@ -1046,7 +1046,7 @@ tr:nth-child(2) .number::before {
    animation: float 2s infinite;
 }
 
-tr:nth-child(2) .number::after {
+tbody tr:nth-child(1) .number::after {
    content: '✨';
    position: absolute;
    top: -10px;
