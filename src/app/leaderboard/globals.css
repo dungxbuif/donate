@@ -1,6 +1,103 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+   --foreground-rgb: 0, 0, 0;
+   --background-start-rgb: 214, 219, 220;
+   --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+   :root {
+      --foreground-rgb: 255, 255, 255;
+      --background-start-rgb: 0, 0, 0;
+      --background-end-rgb: 0, 0, 0;
+   }
+}
+
+/* Legacy CSS from index.html */
+* {
+   font-size: 62.5%;
+   box-sizing: border-box;
+   margin: 0;
+   padding: 0;
+}
+
+body {
+   height: 100%;
+   width: 100%;
+   min-height: 100vh;
+   background: linear-gradient(
+      -45deg,
+      #ee7752,
+      #e73c7e,
+      #23a6d5,
+      #23d5ab,
+      #ff6b6b,
+      #4ecdc4
+   );
+   background-size: 600% 600%;
+   animation: gradientShift 10s ease infinite;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   overflow-x: hidden;
+   position: relative;
+   font-family: 'Rubik', sans-serif;
+}
+
+/* Add floating particles background */
+body::before {
+   content: '✨💰🎊🌟💎🎯🚀🏆';
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   font-size: 2rem;
+   opacity: 0.1;
+   pointer-events: none;
+   z-index: -1;
+   animation: float 20s infinite linear;
+   letter-spacing: 5rem;
+   line-height: 8rem;
+}
+
+/* Fireworks background layer */
+body::after {
+   content: '';
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background-image: radial-gradient(3px 3px at 20px 30px, #fff, transparent),
+      radial-gradient(3px 3px at 40px 70px, #ff6b6b, transparent),
+      radial-gradient(2px 2px at 90px 40px, #4ecdc4, transparent),
+      radial-gradient(2px 2px at 130px 80px, #feca57, transparent),
+      radial-gradient(3px 3px at 160px 30px, #ff9ff3, transparent),
+      radial-gradient(2px 2px at 200px 60px, #54a0ff, transparent);
+   background-repeat: repeat;
+   background-size: 250px 120px;
+   animation: sparkleMove 15s linear infinite;
+   opacity: 0.4;
+   pointer-events: none;
+   z-index: 0;
+}
+
+@keyframes fadeInUp {
+   from {
+      opacity: 0;
+      transform: translateY(50px);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
+
+@keyframes slideInRight {
    from {
       opacity: 0;
       transform: translateX(100px);

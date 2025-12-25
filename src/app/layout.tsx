@@ -1,12 +1,8 @@
 import type { Metadata } from 'next';
-import { Rubik } from 'next/font/google';
-import './globals.css';
-
-const rubik = Rubik({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-   title: 'Donation Leaderboard',
-   description: 'Donation Leaderboard',
+   title: 'Donation App',
+   description: 'Donation Application',
 };
 
 export default function RootLayout({
@@ -16,10 +12,7 @@ export default function RootLayout({
 }>) {
    return (
       <html lang="en">
-         <head>
-            <script src="https://unpkg.com/@phosphor-icons/web"></script>
-         </head>
-         <body className={rubik.className}>{children}</body>
+         <body>{children}</body>
       </html>
    );
 }
