@@ -11,6 +11,12 @@ interface ApiResponse {
    data: Transaction[];
 }
 
+export interface DonorTransaction {
+   amount: number;
+   timestamp: number;
+   message: string;
+}
+
 export interface Donor {
    Sender: string;
    UserName: string;
@@ -18,6 +24,7 @@ export interface Donor {
    Amount: string;
    AmountNum: number;
    Note: string;
+   transactions: DonorTransaction[];
 }
 
 const BASE_URL = 'https://dong.mezon.ai/indexer-api/1337/transactions';
@@ -43,16 +50,29 @@ export async function getDonations(): Promise<{
       }
 
       const data: ApiResponse = await res.json();
-      const groups: { [key: string]: { total: number; notes: string[] } } = {};
+      const groups: {
+         [key: string]: {
+            total: number;
+            notes: string[];
+            transactions: DonorTransaction[];
+         };
+      } = {};
       let totalDonationAmount = 0;
 
       data.data.forEach((tx) => {
          const amount = Number(tx.value) / 1000000;
          if (!groups[tx.from_address]) {
-            groups[tx.from_address] = { total: 0, notes: [] };
+            groups[tx.from_address] = { total: 0, notes: [], transactions: [] };
          }
          groups[tx.from_address].total += amount;
          totalDonationAmount += amount;
+
+         // Add individual transaction to history
+         groups[tx.from_address].transactions.push({
+            amount: amount,
+            timestamp: tx.transaction_timestamp * 1000, // Convert to milliseconds
+            message: tx.text_data?.trim() || '',
+         });
 
          if (tx.text_data?.trim()) {
             groups[tx.from_address].notes.push(tx.text_data.trim());
@@ -69,6 +89,9 @@ export async function getDonations(): Promise<{
             Amount: new Intl.NumberFormat('vi-VN').format(data.total),
             AmountNum: data.total,
             Note: data.notes.join(', '),
+            transactions: data.transactions.sort(
+               (a, b) => b.timestamp - a.timestamp
+            ), // Sort by newest first
          }))
          .sort((a, b) => b.AmountNum - a.AmountNum);
 

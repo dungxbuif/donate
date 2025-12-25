@@ -1,7 +1,7 @@
 'use client';
 
 import { Donor } from '@/lib/data';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface LeaderboardProps {
    donors: Donor[];
@@ -11,9 +11,10 @@ interface LeaderboardProps {
 export default function Leaderboard({ donors, totalAmount }: LeaderboardProps) {
    const totalDisplayRef = useRef<HTMLDivElement>(null);
    const fireworksContainerRef = useRef<HTMLDivElement>(null);
+   const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null);
+   const [isModalOpen, setIsModalOpen] = useState(false);
 
    useEffect(() => {
-      // Animate total amount
       if (totalDisplayRef.current) {
          animateValue(totalDisplayRef.current, 0, totalAmount, 2000);
       }
@@ -32,11 +33,58 @@ export default function Leaderboard({ donors, totalAmount }: LeaderboardProps) {
       };
    }, [totalAmount]);
 
+   // Prevent body scroll when modal is open
+   useEffect(() => {
+      if (isModalOpen) {
+         document.body.style.overflow = 'hidden';
+      } else {
+         document.body.style.overflow = '';
+      }
+
+      return () => {
+         document.body.style.overflow = '';
+      };
+   }, [isModalOpen]);
+
    const handleRefresh = () => {
       showPartyMode();
       setTimeout(() => {
          window.location.reload();
       }, 1000);
+   };
+
+   const handleRowClick = (donor: Donor) => {
+      setSelectedDonor(donor);
+      setIsModalOpen(true);
+   };
+
+   const closeModal = () => {
+      setIsModalOpen(false);
+      setSelectedDonor(null);
+   };
+
+   // Close modal on Escape key
+   useEffect(() => {
+      const handleEscape = (e: KeyboardEvent) => {
+         if (e.key === 'Escape' && isModalOpen) {
+            closeModal();
+         }
+      };
+
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+   }, [isModalOpen]);
+
+   const formatDate = (timestamp: number) => {
+      const date = new Date(timestamp);
+      return date.toLocaleString('vi-VN', {
+         year: 'numeric',
+         month: '2-digit',
+         day: '2-digit',
+         hour: '2-digit',
+         minute: '2-digit',
+         second: '2-digit',
+      });
    };
 
    return (
@@ -65,13 +113,24 @@ export default function Leaderboard({ donors, totalAmount }: LeaderboardProps) {
 
             <div id="header">
                <h1>💎 Donation Ranking</h1>
-               <button
-                  className="continue"
-                  onClick={handleRefresh}
-                  style={{ animation: 'float 3s ease-in-out infinite' }}
-               >
-                  <i className="ph ph-arrow-clockwise"></i>
-               </button>
+               <div className="header-actions">
+                  <div className="qr-section">
+                     <img
+                        src="/donate-qr.png"
+                        alt="Donate QR Code"
+                        className="donate-qr"
+                        title="Scan to donate"
+                     />
+                     <span className="qr-label">💰 Scan to Donate</span>
+                  </div>
+                  <button
+                     className="continue"
+                     onClick={handleRefresh}
+                     style={{ animation: 'float 3s ease-in-out infinite' }}
+                  >
+                     <i className="ph ph-arrow-clockwise"></i>
+                  </button>
+               </div>
             </div>
 
             <div id="leaderboard">
@@ -131,10 +190,13 @@ export default function Leaderboard({ donors, totalAmount }: LeaderboardProps) {
                         return (
                            <tr
                               key={index}
-                              className={rowClass}
+                              className={`${rowClass} donor-row`}
                               style={{
                                  animationDelay: `${(index + 1) * 0.1}s`,
+                                 cursor: 'pointer',
                               }}
+                              onClick={() => handleRowClick(donation)}
+                              title="Click to view transaction history"
                            >
                               <td className="number">{index + 1}</td>
                               <td className="name">
@@ -165,6 +227,67 @@ export default function Leaderboard({ donors, totalAmount }: LeaderboardProps) {
                </table>
             </div>
          </main>
+
+         {/* Transaction History Modal */}
+         {isModalOpen && selectedDonor && (
+            <div className="modal-overlay" onClick={closeModal}>
+               <div
+                  className="modal-content"
+                  onClick={(e) => e.stopPropagation()}
+               >
+                  <div className="modal-header">
+                     <div className="modal-user-info">
+                        <img
+                           src={
+                              selectedDonor.Avatar ||
+                              `https://api.dicebear.com/9.x/avataaars/svg?seed=${selectedDonor.UserName}`
+                           }
+                           alt="avatar"
+                           className="modal-avatar"
+                        />
+                        <div>
+                           <h2>{selectedDonor.UserName}</h2>
+                           <p className="total-donated">
+                              Total: {selectedDonor.Amount} VND
+                           </p>
+                        </div>
+                     </div>
+                     <button className="modal-close" onClick={closeModal}>
+                        ×
+                     </button>
+                  </div>
+
+                  <div className="modal-body">
+                     <h3>
+                        💰 Transaction History (
+                        {selectedDonor.transactions.length} transactions)
+                     </h3>
+                     <div className="transactions-list">
+                        {selectedDonor.transactions.map((transaction, idx) => (
+                           <div key={idx} className="transaction-item">
+                              <div className="transaction-header">
+                                 <span className="transaction-amount">
+                                    {new Intl.NumberFormat('vi-VN').format(
+                                       transaction.amount
+                                    )}{' '}
+                                    VND
+                                 </span>
+                                 <span className="transaction-time">
+                                    {formatDate(transaction.timestamp)}
+                                 </span>
+                              </div>
+                              {transaction.message && (
+                                 <div className="transaction-message">
+                                    💬 {transaction.message}
+                                 </div>
+                              )}
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+               </div>
+            </div>
+         )}
       </>
    );
 }
