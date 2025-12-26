@@ -1,10 +1,10 @@
 'use client';
 
 import { UserInfoData } from '@/app/auth/callback/route';
+import addressMap from '@/lib/addressMap';
 import { Donor } from '@/lib/data';
 import { useEffect, useRef, useState } from 'react';
 import './Leaderboard.css';
-import LoginButton from './LoginButton';
 
 interface LeaderboardProps {
    donors: Donor[];
@@ -95,6 +95,17 @@ export default function Leaderboard({
       });
    };
 
+   // Check if current user has donated
+   const userHasDonated = user
+      ? donors.some((donor) => {
+           // Find if user's mezonId matches any address in addressMap
+           const foundAddress = Object.entries(addressMap).find(
+              ([_, info]) => info.mezonId === user.user_id
+           );
+           return foundAddress && donor.Sender === foundAddress[0];
+        })
+      : false;
+
    return (
       <>
          <div
@@ -110,10 +121,6 @@ export default function Leaderboard({
 
          <div className="royal-ornament royal-left">🏛️</div>
          <div className="royal-ornament royal-right">🏛️</div>
-
-         <div className="login-corner">
-            <LoginButton user={user} />
-         </div>
 
          <main>
             <div className="floating-emoji">💰</div>
@@ -134,6 +141,71 @@ export default function Leaderboard({
                      />
                      <span className="qr-label">💰 Scan to Donate</span>
                   </div>
+                  <button
+                     className="certificate-btn"
+                     onClick={() => {
+                        if (!user) {
+                           window.location.href = '/api/auth/login';
+                        } else if (userHasDonated) {
+                           window.location.href = '/certificate';
+                        } else {
+                           window.location.href = '/certificate';
+                        }
+                     }}
+                     title={
+                        !user
+                           ? 'Login to get your donation certificate'
+                           : userHasDonated
+                           ? 'Get your donation certificate'
+                           : 'View certificate page'
+                     }
+                     style={{
+                        animation: 'float 3s ease-in-out infinite',
+                        animationDelay: '1s',
+                        background:
+                           'linear-gradient(45deg, #FFD700, #FFA500, #DAA520)',
+                        border: '2px solid #FFD700',
+                        borderRadius: '15px',
+                        padding: '14px 24px',
+                        color: '#1a1a1a',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        boxShadow:
+                           '0 8px 25px rgba(255, 215, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+                        transition: 'all 0.3s ease',
+                        textDecoration: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        textShadow: '1px 1px 2px rgba(0,0,0,0.1)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                     }}
+                     onMouseEnter={(e) => {
+                        e.currentTarget.style.transform =
+                           'scale(1.08) translateY(-2px)';
+                        e.currentTarget.style.boxShadow =
+                           '0 12px 35px rgba(255, 215, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.5)';
+                        e.currentTarget.style.background =
+                           'linear-gradient(45deg, #FFED4E, #FFD700, #FFA500)';
+                     }}
+                     onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow =
+                           '0 8px 25px rgba(255, 215, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                        e.currentTarget.style.background =
+                           'linear-gradient(45deg, #FFD700, #FFA500, #DAA520)';
+                     }}
+                  >
+                     {!user ? (
+                        <>🔐 Đăng nhập để nhận chứng nhận</>
+                     ) : userHasDonated ? (
+                        <>👑 Nhận Chứng Nhận Hoàng Gia</>
+                     ) : (
+                        <>💰 Đóng góp để nhận chứng nhận</>
+                     )}
+                  </button>
                   <button
                      className="continue"
                      onClick={handleRefresh}

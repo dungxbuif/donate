@@ -1,6 +1,7 @@
 'use client';
 
 import { UserInfoData } from '@/app/auth/callback/route';
+import { Button } from '@/components/ui/button';
 
 interface LoginButtonProps {
    user: UserInfoData | null;
@@ -41,11 +42,13 @@ export default function LoginButton({ user }: LoginButtonProps) {
    }
 
    return (
-      <button
+      <Button
+         variant="outline"
+         size="sm"
+         className="gap-2 bg-transparent"
          onClick={handleLogin}
-         className="inline-flex h-14 items-center justify-center rounded-xl bg-black px-10 text-lg font-bold text-white shadow-lg transition-all hover:bg-gray-900 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 disabled:pointer-events-none disabled:opacity-50"
       >
-         Login with Mezon
-      </button>
+         Đăng nhập với Mezon
+      </Button>
    );
 }

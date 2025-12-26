@@ -6,6 +6,9 @@ import 'server-only';
 const secretKey = process.env.SESSION_SECRET;
 
 export async function encrypt(payload: UserInfoData): Promise<string> {
+   console.log('[Session] Encrypting payload for user_id:', payload.user_id);
+   console.log('[Session] Secret key exists:', !!secretKey);
+
    const data = JSON.stringify(payload);
    const timestamp = Date.now().toString();
 
@@ -18,13 +21,16 @@ export async function encrypt(payload: UserInfoData): Promise<string> {
    const session = Buffer.from(`${data}.${timestamp}.${signature}`).toString(
       'base64'
    );
+   console.log(
+      '[Session] Encryption successful, session length:',
+      session.length
+   );
    return session;
 }
 
 export async function decrypt(session: string | undefined = '') {
    try {
       if (!session) {
-         console.log('[decrypt] No session string provided');
          return null;
       }
 
@@ -34,7 +40,6 @@ export async function decrypt(session: string | undefined = '') {
       const secondLastDotIndex = decoded.lastIndexOf('.', lastDotIndex - 1);
 
       if (lastDotIndex === -1 || secondLastDotIndex === -1) {
-         console.log('[decrypt] Invalid session format');
          return null;
       }
 
@@ -42,33 +47,23 @@ export async function decrypt(session: string | undefined = '') {
       const timestamp = decoded.substring(secondLastDotIndex + 1, lastDotIndex);
       const signature = decoded.substring(lastDotIndex + 1);
 
-      // Verify signature
       const expectedSignature = createHmac('sha256', secretKey!)
          .update(data + '.' + timestamp)
          .digest('hex');
 
       if (signature !== expectedSignature) {
-         console.log('[decrypt] Signature mismatch');
-         console.log('[decrypt] Expected:', expectedSignature);
-         console.log('[decrypt] Received:', signature);
-         console.log('[decrypt] Data:', data);
-         console.log('[decrypt] Timestamp:', timestamp);
-         console.log('[decrypt] SecretKey exists:', !!secretKey);
          return null;
       }
 
-      // Check expiration
       const sessionTime = parseInt(timestamp);
       const expirationTime = sessionTime + 7 * 24 * 60 * 60 * 1000; // 7 days
 
       if (Date.now() > expirationTime) {
-         console.log('[decrypt] Session expired');
          return null;
       }
 
       return JSON.parse(data);
    } catch (error) {
-      console.log('Failed to verify session', error);
       return null;
    }
 }
@@ -85,29 +80,4 @@ export async function createSession(user: UserInfoData) {
       sameSite: 'lax',
       path: '/',
    });
-}
-
-export async function updateSession() {
-   const cookieStore = await cookies();
-   const session = cookieStore.get('session')?.value;
-   const payload = await decrypt(session);
-
-   if (!session || !payload) {
-      return null;
-   }
-
-   const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-   cookieStore.set('session', session, {
-      httpOnly: true,
-      secure: true,
-      expires: expires,
-      sameSite: 'lax',
-      path: '/',
-   });
-}
-
-export async function deleteSession() {
-   const cookieStore = await cookies();
-   cookieStore.delete('session');
 }

@@ -18,20 +18,12 @@ export async function getCurrentUser(): Promise<UserInfoData | null> {
    try {
       const cookieStore = await cookies();
       const session = cookieStore.get('session')?.value;
-      console.log(
-         '[getCurrentUser] Session cookie:',
-         session ? 'Found' : 'Not found'
-      );
-
       if (!session) {
          return null;
       }
 
       const payload = await decrypt(session);
-      console.log('[getCurrentUser] Decrypted payload:', payload);
-
       if (!payload || !payload.user_id) {
-         console.log('[getCurrentUser] Invalid payload or missing user_id');
          return null;
       }
       return (payload as UserInfoData) || null;
