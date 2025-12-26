@@ -5,8 +5,8 @@ import 'server-only';
 
 const secretKey = process.env.SESSION_SECRET;
 
-export async function encrypt(payload: UserInfoData): Promise<string> {
-   console.log('[Session] Encrypting payload for user_id:', payload.user_id);
+export async function encrypt(payload: any): Promise<string> {
+   console.log('[Session] Encrypting payload:', payload);
    console.log('[Session] Secret key exists:', !!secretKey);
 
    const data = JSON.stringify(payload);

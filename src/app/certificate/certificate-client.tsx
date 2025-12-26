@@ -1,6 +1,5 @@
 'use client';
 
-import { UserInfoData } from '@/app/auth/callback/route';
 import { CertificateContainer } from '@/components/certificate-container';
 import { Button } from '@/components/ui/button';
 import { type Donor } from '@/lib/data';
@@ -9,83 +8,93 @@ import { jsPDF } from 'jspdf';
 import { ArrowLeft, Download, Image, Printer, Share2 } from 'lucide-react';
 
 interface CertificateClientProps {
-   currentUser: UserInfoData | null;
    userDonation: Donor | null;
 }
 
 export default function CertificateClient({
-   currentUser,
    userDonation,
 }: CertificateClientProps) {
    const handleShare = async () => {
-      const userName =
-         currentUser?.display_name ||
-         currentUser?.username ||
-         userDonation?.UserName ||
-         'Người đóng góp';
+      const userName = userDonation?.UserName || 'Người đóng góp';
       const amount = userDonation?.Amount || '0';
 
+      if (!userDonation) {
+         alert('Không có thông tin đóng góp để chia sẻ.');
+         return;
+      }
+
       try {
-         // Generate image of the certificate
-         const certificateElement = document.querySelector(
-            '.certificate-container'
-         );
-         if (!certificateElement) {
-            alert('Không tìm thấy giấy chứng nhận. Vui lòng thử lại.');
-            return;
+         const certificateData = {
+            donorName: userName,
+            amount: `${userDonation.Amount} VNĐ`,
+            sender: userDonation.Sender,
+            organizationName: 'Chi nhánh NCC Quy Nhôn',
+         };
+
+         const response = await fetch('/api/share/certificate', {
+            method: 'POST',
+            headers: {
+               'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(certificateData),
+         });
+
+         if (!response.ok) {
+            throw new Error('Lỗi khi tạo link chia sẻ');
          }
 
-         const canvas = await html2canvas(certificateElement as HTMLElement, {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            width: certificateElement.scrollWidth,
-            height: certificateElement.scrollHeight,
-         });
+         const { token } = await response.json();
+         const shareUrl = `${window.location.origin}/certificate/share?token=${token}`;
 
-         // Convert canvas to blob
-         const blob = await new Promise<Blob>((resolve) => {
-            canvas.toBlob(
-               (blob) => {
-                  resolve(blob!);
-               },
-               'image/png',
-               0.9
-            );
-         });
-
-         const safeFileName = userName
-            .replace(/[^a-zA-Z0-9]/g, '-')
-            .toLowerCase();
-         const imageFile = new File(
-            [blob],
-            `chung-nhan-dong-gop-teambuilding-${safeFileName}.png`,
-            { type: 'image/png' }
-         );
-
-         // Try to share with image file
-         if (navigator.share && navigator.canShare?.({ files: [imageFile] })) {
-            await navigator.share({
-               title: 'Giấy Chứng Nhận Đóng Góp Team Building',
-               text: `Giấy chứng nhận đóng góp team building của ${userName} - số tiền ${amount} VNĐ cho Chi nhánh NCC Quy Nhôn`,
-               files: [imageFile],
-            });
-         } else if (navigator.share) {
-            // Fallback to sharing URL if file sharing not supported
-            await navigator.share({
-               title: 'Giấy Chứng Nhận Đóng Góp Team Building',
-               text: `Xem giấy chứng nhận đóng góp team building của ${userName} - số tiền ${amount} VNĐ cho Chi nhánh NCC Quy Nhôn`,
-               url: window.location.href,
-            });
+         // Try to share the URL
+         if (navigator.share) {
+            try {
+               // First try sharing with just URL to avoid text concatenation issues
+               await navigator.share({
+                  title: 'Giấy Chứng Nhận Đóng Góp Team Building',
+                  url: shareUrl,
+               });
+            } catch (error) {
+               // If that fails, try with text but handle it carefully
+               console.log(
+                  'Share with URL only failed, trying with text:',
+                  error
+               );
+               try {
+                  await navigator.share({
+                     title: 'Giấy Chứng Nhận Đóng Góp Team Building',
+                     text: `Xem giấy chứng nhận đóng góp team building của ${userName} - số tiền ${amount} VNĐ cho Chi nhánh NCC Quy Nhôn\n\n${shareUrl}`,
+                  });
+               } catch (secondError) {
+                  console.log('Share with text also failed:', secondError);
+                  throw secondError;
+               }
+            }
          } else {
-            // Fallback for browsers that don't support Web Share API
-            copyToClipboard();
+            // Fallback to copying URL to clipboard
+            await navigator.clipboard.writeText(shareUrl);
+            // Create a temporary toast notification
+            const toast = document.createElement('div');
+            toast.textContent = 'Đã sao chép link chia sẻ vào clipboard!';
+            toast.style.cssText = `
+               position: fixed;
+               top: 20px;
+               right: 20px;
+               background: #10b981;
+               color: white;
+               padding: 12px 24px;
+               border-radius: 8px;
+               box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+               z-index: 1000;
+               font-family: system-ui;
+               font-weight: 500;
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => document.body.removeChild(toast), 3000);
          }
       } catch (error) {
-         console.log('Error sharing:', error);
-         // Fallback to copying URL to clipboard
-         copyToClipboard();
+         console.error('Error sharing:', error);
+         alert('Lỗi khi tạo link chia sẻ. Vui lòng thử lại.');
       }
    };
 
@@ -142,10 +151,7 @@ export default function CertificateClient({
          // Create download link for image
          const link = document.createElement('a');
          link.download = `chung-nhan-dong-gop-teambuilding-${(
-            currentUser?.display_name ||
-            currentUser?.username ||
-            userDonation?.UserName ||
-            'user'
+            userDonation?.UserName || 'user'
          )
             .replace(/[^a-zA-Z0-9]/g, '-')
             .toLowerCase()}.png`;
@@ -176,7 +182,6 @@ export default function CertificateClient({
             height: certificateElement.scrollHeight,
          });
 
-         // Create PDF
          const imgData = canvas.toDataURL('image/png');
          const pdf = new jsPDF({
             orientation: 'landscape',
@@ -185,11 +190,7 @@ export default function CertificateClient({
          });
 
          pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-         const userName =
-            currentUser?.display_name ||
-            currentUser?.username ||
-            userDonation?.UserName ||
-            'user';
+         const userName = userDonation?.UserName || 'user';
          const safeFileName = userName
             .replace(/[^a-zA-Z0-9]/g, '-')
             .toLowerCase();
@@ -283,43 +284,22 @@ export default function CertificateClient({
                   </div>
                </div>
 
-               {/* Certificate Display */}
                <div className="certificate-container">
-                  {!currentUser ? (
+                  {!userDonation ? (
                      <div className="flex items-center justify-center min-h-[500px]">
                         <div className="text-center space-y-4">
                            <p className="text-lg text-muted-foreground">
-                              Vui lòng đăng nhập để xem giấy chứng nhận
-                           </p>
-                           <Button
-                              className="cursor-pointer"
-                              onClick={() =>
-                                 (window.location.href = '/api/auth/login')
-                              }
-                           >
-                              Đăng nhập
-                           </Button>
-                        </div>
-                     </div>
-                  ) : !userDonation ? (
-                     <div className="flex items-center justify-center min-h-[500px]">
-                        <div className="text-center space-y-4">
-                           <p className="text-lg text-muted-foreground">
-                              Chưa có thông tin đóng góp cho team building
+                              Không tìm thấy thông tin đóng góp
                            </p>
                            <p className="text-sm text-muted-foreground">
-                              Hãy tham gia đóng góp để nhận giấy chứng nhận!
+                              Vui lòng đăng nhập hoặc kiểm tra thông tin đóng
+                              góp của bạn
                            </p>
                         </div>
                      </div>
                   ) : (
                      <CertificateContainer
-                        donorName={
-                           currentUser?.display_name ||
-                           currentUser?.username ||
-                           userDonation?.UserName ||
-                           'Người đóng góp'
-                        }
+                        donorName={userDonation?.UserName || 'Người đóng góp'}
                         amount={`${userDonation.Amount} VNĐ`}
                         date={`Quy Nhon, ${new Date().toLocaleDateString(
                            'vi-VN'
@@ -329,7 +309,6 @@ export default function CertificateClient({
                   )}
                </div>
 
-               {/* Footer Meta */}
                <p className="text-center text-muted-foreground text-sm">
                   {userDonation ? (
                      <>
