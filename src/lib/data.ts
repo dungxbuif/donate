@@ -30,7 +30,7 @@ export interface Donor {
 const BASE_URL = 'https://dong.mezon.ai/indexer-api/1337/transactions';
 const params = new URLSearchParams({
    page: '0',
-   limit: '100',
+   limit: '1000',
    sort_by: 'transaction_timestamp',
    sort_order: 'desc',
    start_time: '2025-12-01',
@@ -44,7 +44,6 @@ export async function getDonations(): Promise<{
 }> {
    try {
       const res = await fetch(API_URL, { cache: 'no-store' });
-
       if (!res.ok) {
          throw new Error('Failed to fetch data');
       }
@@ -59,25 +58,35 @@ export async function getDonations(): Promise<{
       } = {};
       let totalDonationAmount = 0;
 
-      data.data.forEach((tx) => {
-         const amount = Number(tx.value) / 1000000;
-         if (!groups[tx.from_address]) {
-            groups[tx.from_address] = { total: 0, notes: [], transactions: [] };
-         }
-         groups[tx.from_address].total += amount;
-         totalDonationAmount += amount;
+      data.data
+         .filter(
+            (tx) =>
+               tx.from_address !==
+               'F6tdkXdK8nb1nMxGc2ZFBB8ZTJBM6j6rhkmUUqs2M4DE'
+         )
+         .forEach((tx) => {
+            const amount = Number(tx.value) / 1000000;
+            if (!groups[tx.from_address]) {
+               groups[tx.from_address] = {
+                  total: 0,
+                  notes: [],
+                  transactions: [],
+               };
+            }
+            groups[tx.from_address].total += amount;
+            totalDonationAmount += amount;
 
-         // Add individual transaction to history
-         groups[tx.from_address].transactions.push({
-            amount: amount,
-            timestamp: tx.transaction_timestamp * 1000, // Convert to milliseconds
-            message: tx.text_data?.trim() || '',
+            // Add individual transaction to history
+            groups[tx.from_address].transactions.push({
+               amount: amount,
+               timestamp: tx.transaction_timestamp * 1000, // Convert to milliseconds
+               message: tx.text_data?.trim() || '',
+            });
+
+            if (tx.text_data?.trim()) {
+               groups[tx.from_address].notes.push(tx.text_data.trim());
+            }
          });
-
-         if (tx.text_data?.trim()) {
-            groups[tx.from_address].notes.push(tx.text_data.trim());
-         }
-      });
 
       const donors = Object.entries(groups)
          .map(([addr, data]) => ({
